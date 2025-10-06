@@ -1,0 +1,162 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="DLS-Style Realism Demo">
+    <h1 class="mb-6">DLS-Style Realism Demo</h1>
+    <p class="mb-8 text-lg opacity-90">
+        Interactive 3D player viewer with lighting, shadows, and animation controls. Optimized for
+        smooth interaction and visual quality.
+    </p>
+
+    <div class="grid gap-6 lg:grid-cols-5">
+        <div class="lg:col-span-3">
+            <model-viewer
+                id="playerViewer"
+                src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Soldier/glTF-Binary/Soldier.glb"
+                alt="Realistic human model"
+                ar
+                camera-controls
+                auto-rotate
+                autoplay
+                shadow-intensity="1"
+                shadow-softness="1"
+                exposure="1"
+                environment-image="neutral"
+                interaction-prompt="none"
+                style="height: 520px; width: 100%; border-radius: 0.5rem; background: radial-gradient(1000px 400px at 50% 100%, rgba(255,255,255,0.07), rgba(0,0,0,0));"
+            ></model-viewer>
+        </div>
+        <div class="lg:col-span-2">
+            <div class="space-y-5 rounded-lg bg-black/20 p-4">
+                <div>
+                    <label class="mb-1 block text-sm opacity-80" for="modelSelect">Model</label>
+                    <select id="modelSelect" class="w-full rounded bg-gray-900 p-2">
+                        <option value="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Soldier/glTF-Binary/Soldier.glb" selected>
+                            Soldier (animated)
+                        </option>
+                        <option value="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMan/glTF-Binary/CesiumMan.glb">
+                            Cesium Man (animated)
+                        </option>
+                        <option value="https://modelviewer.dev/shared-assets/models/Astronaut.glb">Astronaut (hi‑res)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-sm opacity-80" for="animationSelect">Animation</label>
+                    <select id="animationSelect" class="w-full rounded bg-gray-900 p-2">
+                        <option value="">Auto</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-sm opacity-80" for="exposureRange">Exposure</label>
+                    <input id="exposureRange" type="range" min="0.5" max="2.0" step="0.05" value="1" class="w-full" />
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <label for="rotateToggle" class="opacity-80">Auto‑rotate</label>
+                    <input id="rotateToggle" type="checkbox" class="h-5 w-5" checked />
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <label for="qualitySelect" class="opacity-80">Quality</label>
+                    <select id="qualitySelect" class="rounded bg-gray-900 p-2">
+                        <option value="high" selected>High</option>
+                        <option value="balanced">Balanced</option>
+                        <option value="performance">Performance</option>
+                    </select>
+                </div>
+
+                <p class="text-sm opacity-70">
+                    Tip: Use mouse or touch to orbit. On capable devices, enable AR for life‑size view.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script>
+        const viewer = document.getElementById('playerViewer');
+        const modelSelect = document.getElementById('modelSelect');
+        const animationSelect = document.getElementById('animationSelect');
+        const exposureRange = document.getElementById('exposureRange');
+        const rotateToggle = document.getElementById('rotateToggle');
+        const qualitySelect = document.getElementById('qualitySelect');
+
+        function applyQuality(preset) {
+            // Tune parameters for different devices; conservative settings to avoid jank.
+            if (preset === 'high') {
+                viewer.exposure = 1.1;
+                viewer.environmentImage = 'neutral';
+                viewer.shadowIntensity = 1.0;
+                viewer.shadowSoftness = 1.0;
+            } else if (preset === 'balanced') {
+                viewer.exposure = 1.0;
+                viewer.environmentImage = 'neutral';
+                viewer.shadowIntensity = 0.7;
+                viewer.shadowSoftness = 0.8;
+            } else {
+                viewer.exposure = 0.95;
+                viewer.environmentImage = 'neutral';
+                viewer.shadowIntensity = 0.5;
+                viewer.shadowSoftness = 0.6;
+            }
+            exposureRange.value = viewer.exposure.toString();
+        }
+
+        async function refreshAnimations() {
+            // Populate animations available for current model
+            animationSelect.innerHTML = '<option value="">Auto</option>';
+            try {
+                const names = viewer.availableAnimations || [];
+                for (const name of names) {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    animationSelect.appendChild(opt);
+                }
+            } catch (_) {
+                // No animations or API changed – ignore
+            }
+        }
+
+        viewer.addEventListener('load', () => {
+            refreshAnimations();
+        });
+
+        modelSelect.addEventListener('change', () => {
+            viewer.src = modelSelect.value;
+        });
+
+        animationSelect.addEventListener('change', () => {
+            const selected = animationSelect.value;
+            if (selected) {
+                viewer.animationName = selected;
+                viewer.autoplay = true;
+            } else {
+                // Clear explicit animation to allow default
+                viewer.animationName = undefined;
+            }
+        });
+
+        exposureRange.addEventListener('input', () => {
+            viewer.exposure = Number(exposureRange.value);
+        });
+
+        rotateToggle.addEventListener('change', () => {
+            if (rotateToggle.checked) {
+                viewer.setAttribute('auto-rotate', '');
+            } else {
+                viewer.removeAttribute('auto-rotate');
+            }
+        });
+
+        qualitySelect.addEventListener('change', () => {
+            applyQuality(qualitySelect.value);
+        });
+
+        // Initialize defaults
+        applyQuality('high');
+    </script>
+</Layout>
